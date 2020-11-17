@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
+#include <libgen.h>
 
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -24,6 +26,32 @@ do { \
 		return EXIT_FAILURE; \
 	} \
 } while (0);
+
+#ifndef MAP_HUGE_2MB
+#define MAP_HUGE_SHIFT 26
+#define MAP_HUGE_2MB (21 << MAP_HUGE_SHIFT)
+#endif
+
+void* alloc_buffer(daos_size_t* size)
+{
+	const int map_flags = MAP_PRIVATE | MAP_ANONYMOUS;
+	const int prot = PROT_READ | PROT_WRITE;
+
+	/* try huge page (2MB) first */
+	*size = 1 << 21;
+	void *retval = mmap(NULL, *size, prot, map_flags | MAP_HUGETLB | MAP_HUGE_2MB, -1, 0);
+	if (retval != MAP_FAILED) {
+		return retval;
+	}
+
+	retval= mmap(NULL, *size, prot, map_flags, -1, 0);
+	if (retval != MAP_FAILED) {
+		return retval;
+	}
+
+	*size = 0;
+	return NULL;
+}
 
 int main(int argc, char** argv)
 {
@@ -50,28 +78,24 @@ int main(int argc, char** argv)
 
 	CHECK_SUCCESS(dfs_mount(pool_handle, cont_handle, O_RDONLY, &dfs));
 
-	printf("opening: %s\n", argv[1]);
+	char* path = argv[1];
+	fprintf(stderr, "opening: %s\n", path);
 
 	mode_t mode;
 	struct stat sb;
-	CHECK_SUCCESS(dfs_lookup(dfs, argv[1], O_RDONLY, &f, &mode, &sb));
-	printf("%zu bytes in file (stat)\n", sb.st_size);
+	CHECK_SUCCESS(dfs_lookup(dfs, path, O_RDONLY, &f, &mode, &sb));
+	fprintf(stderr, "%zu bytes in file (stat)\n", sb.st_size);
 
-	daos_size_t file_size;
-	CHECK_SUCCESS(dfs_get_size(dfs, f, &file_size));
-	printf("%zu bytes in file (dfs)\n", sb.st_size);
-
-	daos_size_t read_size, buf_size = 4096;
-	char* buffer = malloc(buf_size);
+	daos_size_t read_size, buf_size;
+	char* buffer = alloc_buffer(&buf_size);
 	daos_off_t offset = 0;
-	d_iov_t iov = { buffer, buf_size, 0 };
+	d_iov_t iov = { buffer, buf_size, buf_size };
 	d_sg_list_t sgl = { 1, 0, &iov };
 
 	do {
 		sgl.sg_nr_out = 0;
 		read_size = buf_size;
 		CHECK_SUCCESS(dfs_read(dfs, f, &sgl, offset, &read_size, NULL));
-		printf("got %zu bytes\n", read_size);
 		write(STDOUT_FILENO, buffer, read_size);
 		offset += read_size;
 	} while (sgl.sg_nr_out > 0 && read_size == buf_size);
