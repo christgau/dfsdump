@@ -19,10 +19,8 @@
 do { \
 	int status = (x); \
 	if (status != 0) { \
-		std::cerr << "operation failed at " << __FILE__ << ":" << __LINE__ << status << std::endl; \
-		if (status < sys_nerr) { \
-			std::cerr << sys_errlist[status] << std::endl; \
-		} \
+		std::cerr << "operation failed at " << __FILE__ << ":" << __LINE__ << " -> " \
+			<< status << " " << strerror(status) << std::endl; \
 		return EXIT_FAILURE; \
 	} \
 } while (0);
