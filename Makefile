@@ -1,8 +1,8 @@
-CFLAGS=-O0 -g -Wall
+CXXFLAGS=-O0 -g -Wall
 LDFLAGS=-ldfs -ldaos -ldaos_common -lgurt -luuid
 
-dcat: dcat.c
-	$(CC) $(CFLAGS) $^ $(LDFLAGS)  -o $@
+dcat: dcat.cpp
+	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS)  -o $@
 
 .PHONY: clean
 
