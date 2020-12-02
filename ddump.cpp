@@ -73,7 +73,7 @@ static int transfer(dfs_t *dfs, dfs_obj_t *src, int dst, int &us)
 		CHECK_SUCCESS(dfs_read(dfs, src, &sgl, offset, &read_size, NULL));
 		write(dst, buffer, read_size);
 		offset += read_size;
-	} while (sgl.sg_nr_out > 0 && read_size == buf_size);
+	} while (read_size == buf_size);
 
 	stop = std::chrono::high_resolution_clock::now();
 	us = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
