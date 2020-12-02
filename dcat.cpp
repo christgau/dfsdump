@@ -111,14 +111,15 @@ int main(int argc, char** argv)
 
 	d_rank_list_t *svc_ranks = daos_rank_list_parse(getenv("DAOS_SVCL"), ",");
 
+	/* connect to pool, open (posix) container, and "mount" it */
 	daos_handle_t pool_handle;
 	const char *grp = getenv("DAOS_GROUP");
-	CHECK_SUCCESS(daos_pool_connect(p_uuid, grp, svc_ranks, DAOS_PC_RW, &pool_handle, NULL, NULL));
+	CHECK_SUCCESS(daos_pool_connect(p_uuid, grp, svc_ranks, DAOS_PC_RO, &pool_handle, NULL, NULL));
 
 	dfs_t *dfs;
 	dfs_obj_t *f;
 	daos_handle_t cont_handle;
-	CHECK_SUCCESS(daos_cont_open(pool_handle, c_uuid, DAOS_COO_RW, &cont_handle, NULL, NULL));
+	CHECK_SUCCESS(daos_cont_open(pool_handle, c_uuid, DAOS_COO_RO, &cont_handle, NULL, NULL));
 	CHECK_SUCCESS(dfs_mount(pool_handle, cont_handle, O_RDONLY, &dfs));
 
 	/* open input */
