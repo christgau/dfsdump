@@ -1,4 +1,4 @@
-# ddump (DAOS dump)
+# dfsdump (DAOS filesystem dump)
 
 Small tool that dumps content of a file inside a POSIX container to another file (or stdout).
 The intended use case is in environments where mounting the DAOS container might not be possible or required.
